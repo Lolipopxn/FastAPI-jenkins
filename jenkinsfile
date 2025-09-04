@@ -30,10 +30,12 @@ pipeline {
         }
         stage('Run Tests & Coverage') {
             steps {
-                withEnv(["VIRTUAL_ENV=${WORKSPACE}/.venv", "PATH=${WORKSPACE}/.venv/bin:${PATH}"]) {
-                    sh 'pytest --maxfail=1 --disable-warnings -q --cov=app --cov-report=xml:coverage.xml tests/'
-                }
-            }
+                sh '''
+                . .venv/bin/activate
+                python -m pytest --maxfail=1 --disable-warnings -q \
+                --cov=app --cov-report=xml:coverage.xml tests/
+                '''
+  }
         }
         stage('SonarQube Analysis') {
             steps {
