@@ -24,7 +24,7 @@ pipeline {
                  . .venv/bin/activate
                  python -m pip install --upgrade pip
                  pip install -r requirements.txt
-                 pip install pytest coverage
+                 pip install pytest coverage pytest-cov flake8
                 '''
             }
         }
@@ -32,8 +32,8 @@ pipeline {
             steps {
                 sh '''
                 . .venv/bin/activate
-                python -m pytest --maxfail=1 --disable-warnings -q \
-                --cov=app --cov-report=xml:coverage.xml tests/
+                python -m pytest --cov=app --cov-report=xml:coverage.xml tests/
+                coverage xml -o coverage.xml
                 '''
   }
         }
