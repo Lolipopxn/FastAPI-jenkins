@@ -1,28 +1,29 @@
-import pytest
-from fastapi.testclient import TestClient
-from app.main import app
+from fastapi import FastAPI, HTTPException, Query
+from typing import List
+from app.utils import calculate_average, reverse_string
 
-client = TestClient(app)
-
-
-def test_root():
-    response = client.get("/")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Hello from FastAPI with Jenkins & SonarQube!"}
+app = FastAPI(
+    title="FastAPI Clean Code Example",
+    description="Simple FastAPI app for Jenkins + Docker + SonarQube pipeline demo",
+    version="1.0.0",
+)
 
 
-def test_average_success():
-    response = client.get("/average?numbers=10&numbers=20&numbers=30")
-    assert response.status_code == 200
-    assert response.json()["average"] == 20.0
+@app.get("/")
+def root():
+    return {"message": "Hello from FastAPI with Jenkins & SonarQube!"}
 
 
-def test_average_empty_list():
-    response = client.get("/average")
-    assert response.status_code == 422  # missing query parameter
+@app.get("/average")
+def get_average(numbers: List[float] = Query(..., description="List ของตัวเลข")):
+    try:
+        result = calculate_average(numbers)
+        return {"average": result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-def test_reverse_string():
-    response = client.get("/reverse?text=SonarQube")
-    assert response.status_code == 200
-    assert response.json()["reversed"] == "ebuQranoS"
+@app.get("/reverse")
+def get_reverse(text: str = Query(..., description="ข้อความที่ต้องการกลับ")):
+    result = reverse_string(text)
+    return {"reversed": result}
