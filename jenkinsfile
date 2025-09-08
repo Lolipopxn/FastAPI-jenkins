@@ -33,7 +33,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh 'sonar-scanner'
+                    sh 'npx sonar-scanner -Dsonar.projectKey=fastapi-demo'
                 }
             }
         }
