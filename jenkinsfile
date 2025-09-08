@@ -32,26 +32,32 @@ pipeline {
         }
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
                 withCredentials([string(credentialsId: 'sonar-token2', variable: 'SONAR_TOKEN')]) {
-                    sh '''
-                    set -eux
+                sh '''
+                    set -e
+                    [ -f coverage.xml ] || (echo "coverage.xml not found" && exit 1)
+                    SCANNER_DIR=".scanner"
+                    mkdir -p "$SCANNER_DIR"
+                    curl -Ls https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip -o scanner.zip
+                    unzip -q scanner.zip -d "$SCANNER_DIR"
+                    export PATH="$PWD/$SCANNER_DIR/sonar-scanner-5.0.1.3006-linux/bin:$PATH"
+
                     sonar-scanner \
-                        -Dsonar.host.url=http://172.17.0.2:9000 \
-                        -Dsonar.login="$SONAR_TOKEN" \
-                        -Dsonar.projectBaseDir="$PWD" \
-                        -Dsonar.projectKey=fastpi-demo \
-                        -Dsonar.projectName="fastpi-demo" \
-                        -Dsonar.sources=app \
-                        -Dsonar.tests=tests \
-                        -Dsonar.python.version=3.11 \
-                        -Dsonar.python.coverage.reportPaths=coverage.xml \
-                        -Dsonar.sourceEncoding=UTF-8
-                    '''
-                }
+                    -Dsonar.host.url=http://172.17.0.2:9000 \
+                    -Dsonar.login="$SONAR_TOKEN" \
+                    -Dsonar.projectKey=fastpi-demo \
+                    -Dsonar.projectName=fastpi-demo \
+                    -Dsonar.sources=app \
+                    -Dsonar.tests=tests \
+                    -Dsonar.python.version=3.11 \
+                    -Dsonar.python.coverage.reportPaths=coverage.xml \
+                    -Dsonar.sourceEncoding=UTF-8 \
+
+                    rm -f scanner.zip
+                '''
                 }
             }
-            }
+        }
 
         stage('Build Docker Image') {
             steps {
