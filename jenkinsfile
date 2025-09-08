@@ -32,8 +32,18 @@ pipeline {
         }
         stage('SonarQube Analysis') {
             steps {
+                script {
+                def scannerHome = tool name: 'SonarQube', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+
                 withSonarQubeEnv('SonarQube') {
-                    sh 'SonarQube/bin/sonar-scanner'
+                    sh """
+                    "${scannerHome}/bin/sonar-scanner" \
+                        -Dsonar.projectKey=fastpi-demo \
+                        -Dsonar.sources=. \
+                        -Dsonar.python.coverage.reportPaths=coverage.xml \
+                        -Dsonar.projectBaseDir=${env.WORKSPACE}
+                    """
+                }
                 }
             }
         }
