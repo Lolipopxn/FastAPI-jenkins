@@ -30,20 +30,28 @@ pipeline {
                 sh 'venv/bin/pytest --maxfail=1 --disable-warnings -q --cov=app --cov-report=xml'
             }
         }
-        stage('SonarQube Analysis') {
+        stage('SonarQube Scan') {
+            environment {
+                SONAR_HOST_URL = 'http://172.17.0.2:9000'
+            }
             steps {
-                script {
-                def scannerHome = tool name: 'SonarQube', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                withCredentials([string(credentialsId: 'sonar-token2', variable: 'SONAR_TOKEN')]) {
+                sh '''
+                    [ -f coverage.xml ] || (echo "coverage.xml not found" && exit 1)
 
-                withSonarQubeEnv('SonarQube') {
-                    sh """
-                    "${scannerHome}/bin/sonar-scanner" \
-                        -Dsonar.projectKey=fastpi-demo \
-                        -Dsonar.sources=. \
-                        -Dsonar.python.coverage.reportPaths=coverage.xml \
-                        -Dsonar.projectBaseDir=${env.WORKSPACE}
-                    """
-                }
+                    docker run --rm \
+                    -e SONAR_HOST_URL="$SONAR_HOST_URL" \
+                    -e SONAR_LOGIN="$SONAR_TOKEN" \
+                    -v "$PWD:/usr/src" \
+                    sonarsource/sonar-scanner-cli \
+                    -Dsonar.projectKey=fastpi-demo \
+                    -Dsonar.projectName=fastpi-demo \
+                    -Dsonar.sources=app \
+                    -Dsonar.tests=tests \
+                    -Dsonar.python.version=3.11 \
+                    -Dsonar.python.coverage.reportPaths=coverage.xml \
+                    -Dsonar.exclusions=venv/**,**/__pycache__/**
+                '''
                 }
             }
         }
