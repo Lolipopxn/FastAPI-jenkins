@@ -27,7 +27,7 @@ pipeline {
         }
         stage('Run Tests & Coverage') {
             steps {
-                sh 'venv/bin/pytest --maxfail=1 --disable-warnings -q --cov=. --cov-report=xml'
+                sh 'venv/bin/pytest --maxfail=1 --disable-warnings -q --cov=app --cov-report=xml'
             }
         }
         stage('SonarQube Analysis') {
