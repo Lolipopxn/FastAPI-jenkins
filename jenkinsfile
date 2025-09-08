@@ -30,31 +30,29 @@ pipeline {
                 sh 'venv/bin/pytest --maxfail=1 --disable-warnings -q --cov=app --cov-report=xml'
             }
         }
-        stage('SonarQube Scan') {
-            environment {
-                SONAR_HOST_URL = 'http://172.17.0.2:9000'
-            }
+        stage('SonarQube Analysis') {
             steps {
+                withSonarQubeEnv('SonarQube') {
                 withCredentials([string(credentialsId: 'sonar-token2', variable: 'SONAR_TOKEN')]) {
-                sh '''
-                    [ -f coverage.xml ] || (echo "coverage.xml not found" && exit 1)
-
-                    docker run --rm \
-                    -e SONAR_HOST_URL="$SONAR_HOST_URL" \
-                    -e SONAR_LOGIN="$SONAR_TOKEN" \
-                    -v "$PWD:/usr/src" \
-                    sonarsource/sonar-scanner-cli \
-                    -Dsonar.projectKey=fastpi-demo \
-                    -Dsonar.projectName=fastpi-demo \
-                    -Dsonar.sources=app \
-                    -Dsonar.tests=tests \
-                    -Dsonar.python.version=3.11 \
-                    -Dsonar.python.coverage.reportPaths=coverage.xml \
-                    -Dsonar.exclusions=venv/**,**/__pycache__/**
-                '''
+                    sh '''
+                    set -eux
+                    sonar-scanner \
+                        -Dsonar.host.url="$SONAR_HOST_URL" \
+                        -Dsonar.login="$SONAR_TOKEN" \
+                        -Dsonar.projectBaseDir="$PWD" \
+                        -Dsonar.projectKey=fastpi-demo \
+                        -Dsonar.projectName="fastpi-demo" \
+                        -Dsonar.sources=app \
+                        -Dsonar.tests=tests \
+                        -Dsonar.python.version=3.11 \
+                        -Dsonar.python.coverage.reportPaths=coverage.xml \
+                        -Dsonar.sourceEncoding=UTF-8
+                    '''
+                }
                 }
             }
-        }
+            }
+
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t fastapi-app:latest .'
