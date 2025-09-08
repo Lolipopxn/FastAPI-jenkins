@@ -37,7 +37,7 @@ pipeline {
                     sh '''
                     set -eux
                     sonar-scanner \
-                        -Dsonar.host.url="http://172.17.0.2:9000" \
+                        -Dsonar.host.url=http://172.17.0.2:9000 \
                         -Dsonar.login="$SONAR_TOKEN" \
                         -Dsonar.projectBaseDir="$PWD" \
                         -Dsonar.projectKey=fastpi-demo \
