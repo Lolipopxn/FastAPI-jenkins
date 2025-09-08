@@ -1,15 +1,12 @@
 pipeline {
-  agent {
-    docker {
-      image 'python:3.11'
-      args '-v /var/run/docker.sock:/var/run/docker.sock'
+    agent {
+        docker {
+            image 'python:3.11'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
     }
-  }
     environment {
         SONARQUBE = credentials('sonar-token')
-        HOME = "${WORKSPACE}"
-        PIP_CACHE_DIR = "${WORKSPACE}/.pip-cache"
-        PIP_DISABLE_PIP_VERSION_CHECK = '1'
     }
     stages {
         stage('Checkout') {
@@ -17,29 +14,24 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/Lolipopxn/FastAPI-jenkins.git'
             }
         }
-        stage('Install Dependencies') {
+        stage('Setup venv') {
             steps {
                 sh '''
-                 python -m venv .venv
-                 . .venv/bin/activate
-                 python -m pip install --upgrade pip
-                 pip install -r requirements.txt
-                 pip install pytest coverage pytest-cov flake8
+                python3 -m venv venv
+                . venv/bin/activate
+                pip install --upgrade pip
+                pip install -r requirements.txt
                 '''
             }
         }
         stage('Run Tests & Coverage') {
             steps {
-                sh '''
-                . .venv/bin/activate
-                python -m pytest --maxfail=1 --disable-warnings -q \
-                --cov=app --cov-report=xml:coverage.xml tests/
-                '''
+                sh 'venv/bin/pytest --maxfail=1 --disable-warnings -q --cov=app --cov-report=xml'
             }
         }
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
+                withSonarQubeEnv('Sonarqube') {
                     sh 'sonar-scanner'
                 }
             }
@@ -51,10 +43,7 @@ pipeline {
         }
         stage('Deploy Container') {
             steps {
-               sh '''
-                 docker rm -f fastapi-app || true
-                 docker run -d --name fastapi-app -p 8000:8000 fastapi-app:latest
-                '''
+                sh 'docker run -d -p 8000:8000 fastapi-app:latest'
             }
         }
     }
