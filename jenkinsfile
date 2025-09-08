@@ -36,14 +36,15 @@ pipeline {
                 sh '''
                     set -e
                     [ -f coverage.xml ] || (echo "coverage.xml not found" && exit 1)
+                    SCANNER_DIR=".scanner"
+                    mkdir -p "$SCANNER_DIR"
+                    curl -Ls https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip -o scanner.zip
+                    unzip -q scanner.zip -d "$SCANNER_DIR"
+                    export PATH="$PWD/$SCANNER_DIR/sonar-scanner-5.0.1.3006-linux/bin:$PATH"
 
-                    SONAR_HOST_URL="http://172.17.0.2:9000"
-
-                    docker run --rm \
-                    -e SONAR_HOST_URL="$SONAR_HOST_URL" \
-                    -e SONAR_TOKEN="$SONAR_TOKEN" \
-                    -v "$PWD:/usr/src" \
-                    sonarsource/sonar-scanner-cli \
+                    sonar-scanner \
+                    -Dsonar.host.url=http://172.17.0.2:9000 \
+                    -Dsonar.token="$SONAR_TOKEN" \
                     -Dsonar.projectKey=fastpi-demo \
                     -Dsonar.projectName=fastpi-demo \
                     -Dsonar.sources=app \
@@ -51,11 +52,13 @@ pipeline {
                     -Dsonar.python.version=3.11 \
                     -Dsonar.python.coverage.reportPaths=coverage.xml \
                     -Dsonar.sourceEncoding=UTF-8 \
-                    -Dsonar.exclusions=venv/**,**/__pycache__/**
+
+                    rm -f scanner.zip
                 '''
                 }
             }
-            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t fastapi-app:latest .'
